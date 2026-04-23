@@ -1,0 +1,6 @@
+@Multi_Tenant_Inventory_Management_Web_API_HostAddress = http://localhost:5028
+
+GET {{Multi_Tenant_Inventory_Management_Web_API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

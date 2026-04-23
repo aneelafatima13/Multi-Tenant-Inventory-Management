@@ -1,0 +1,66 @@
+﻿@{
+    ViewData["Title"] = "Login";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CoreSample</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/CoreSample.styles.css" asp-append-version="true" />
+</head>
+<body>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3>Login</h3>
+                    <input type="email" id="loginEmail" class="form-control mb-2" placeholder="Email">
+                    <input type="password" id="loginPass" class="form-control mb-2" placeholder="Password">
+                    <button id="btnLogin" class="btn btn-primary w-100">Login</button>
+                  
+                </div>
+            </div>
+
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <script>
+                               $("#btnLogin").click(function() {
+                    var data = { Email: $("#loginEmail").val(), Password: $("#loginPass").val() };
+                    $.ajax({
+                        url: '/Login/Login', // Matches the Controller/Action name
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(data),
+                        success: function(res) {
+                            if(res.success) {
+                                window.location.href = "/Dashboard/Dashboard";
+                            } else {
+                                alert(res.msg);
+                            }
+                        },
+                        error: function(err) { alert("Server Error!"); }
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</div>
+        </main>
+    </div>
+
+
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+   
+</body>
+</html>

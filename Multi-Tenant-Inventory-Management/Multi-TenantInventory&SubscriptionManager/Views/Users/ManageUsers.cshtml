@@ -1,0 +1,55 @@
+﻿@{
+    ViewData["Title"] = "ManageUsers";
+}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title fw-semibold mb-4">Register Users</h5>
+        <form id="tenantForm">
+            <input type="hidden" id="userId" />
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">User Name</label>
+                    <input type="text" class="form-control" id="userName" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="text" class="form-control" id="password" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Role</label>
+                    <select class="form-select" id="role">
+                        <option value="Owner">Owner</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Staff">Staff</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Business List</label>
+                    <select class="form-select" id="BusinessList">
+                        
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="save">Save User</button>
+            <button type="button" class="btn btn-light" onclick="resetForm()">Reset</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title fw-semibold mb-4">Active Business</h5>
+        <div class="table-responsive">
+            <table id="userTable" class="table table-bordered text-nowrap align-middle">
+                <thead>
+                    <tr>
+                        <th>User Name</th>
+                        <th>Business Name</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>

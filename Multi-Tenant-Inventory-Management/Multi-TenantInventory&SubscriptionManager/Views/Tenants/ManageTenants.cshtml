@@ -1,0 +1,158 @@
+﻿@{
+    ViewData["Title"] = "ManageTenants";
+}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title fw-semibold mb-4">Register New Business Tenant</h5>
+        <form id="tenantForm">
+            <input type="hidden" id="tenantId" />
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Business Name</label>
+                    <input type="text" class="form-control" id="businessName" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Subscription Plan</label>
+                    <select class="form-select" id="subscriptionPlan">
+                        <option value="Basic">Basic</option>
+                        <option value="Premium">Premium</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="save">Save Tenant</button>
+            <button type="button" class="btn btn-light" onclick="resetForm()">Reset</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title fw-semibold mb-4">Active Tenants</h5>
+        <div class="table-responsive">
+            <table id="tenantTable" class="table table-bordered text-nowrap align-middle">
+                <thead>
+                    <tr>
+                        <th>Business Name</th>
+                        <th>Plan</th>
+                        <th>Status</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+
+           // 1. Initialize DataTable
+           var table = $('#tenantTable').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "filter": true,
+                "ajax": {
+                    "url": "/Tenants/GetTenants",
+                    "type": "POST",
+                    "datatype": "json"
+                },
+                "columns": [
+                    { "data": "businessName", "name": "BusinessName" },
+                    { "data": "subscriptionPlan", "name": "SubscriptionPlan" },
+                            {
+            "data": "statusDisplayText", // Ensure this matches the property name from your DAL
+            "name": "StatusDisplayText",
+            "render": function (data, type, row) {
+                if (data === "Active") {
+                    return `<span class="badge bg-light-success text-success">Active</span>`;
+                } else {
+                    return `<span class="badge bg-light-danger text-danger">Disabled</span>`;
+                }
+            }
+        },
+        {
+                        "data": "createdAt",
+                        "render": function(data) { return new Date(data).toLocaleDateString(); }
+                    },
+                            {
+            "data": "id",
+            "render": function (data, type, row) {
+                const btnClass = row.statusDisplayText === "Active" ? "btn-outline-danger" : "btn-outline-success";
+                const btnText = row.statusDisplayText === "Active" ? "Disable" : "Enable";
+
+                return `
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editTenant('${data}', '${row.businessName}', '${row.subscriptionPlan}')">Edit</button>
+                        <button class="btn btn-sm ${btnClass}" onclick="toggleStatus('${data}')">${btnText}</button>
+                    </div>`;
+            }
+        }
+                ]
+            });
+           
+            // 2. Submit Form via AJAX
+                   $('#save').click(function() {
+            var tenantId = $('#tenantId').val();
+            var data = {
+                Id: (!tenantId) ? null : tenantId,
+                BusinessName: $('#businessName').val(),
+                SubscriptionPlan: $('#subscriptionPlan').val()
+            };
+
+            // Basic Client-side validation
+            if (!data.BusinessName) {
+                alert("Please enter a business name.");
+                return;
+            }
+
+            $.ajax({
+                url: '/Tenants/SaveTenant',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function () {
+                    alert('Tenant Saved Successfully');
+                    resetForm();
+                    location.reload(); // Uncomment this to refresh the table!
+                },
+                error: function (xhr) {
+                    // Display the specific error message from the API/Controller
+                    var errorMessage = xhr.responseText || "An error occurred on the server.";
+                    alert("Error: " + errorMessage);
+                }
+            });
+        });
+
+        function editTenant(id, name, plan) {
+            $('#tenantId').val(id);
+            $('#businessName').val(name);
+            $('#subscriptionPlan').val(plan);
+            window.scrollTo(0, 0);
+        }
+
+        function resetForm() {
+            $('#tenantId').val('');
+            $('#tenantForm')[0].reset();
+        }
+
+                function toggleStatus(id) {
+            if (confirm("Are you sure you want to change this tenant's status?")) {
+                $.ajax({
+                    url: '/Tenants/ToggleStatus',
+                    type: 'POST',
+                    data: { id: id },
+                    success: function (response) {
+                        alert('Status updated successfully');
+                        table.ajax.reload(null, false); // Reload table without resetting paging
+                    },
+                    error: function () {
+                        alert('Error updating status');
+                    }
+                });
+            }
+        }
+    </script>
+}
