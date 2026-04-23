@@ -30,7 +30,6 @@
                         {
                             <option value="Owner">Owner</option>
                             <option value="Admin">Admin</option>
-                            <option value="Staff">Staff</option>
                         }
                         else if (userRole == "Admin")
                         {
@@ -39,25 +38,25 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Business List</label>
-                    <select class="form-select" id="BusinessList">
-                        
-                    </select>
-                </div>
                 @if (userRole == "Owner")
                 {
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Duration</label>
-                        <select class="form-select" id="role">
-                            <option value="6Months">6 months</option>
-                            <option value="1Year">1 Year</option>
-                            <option value="2Years">2 Years</option>
-                            <option value="3Years">3 Years</option>
-                            <option value="4Years">4 Years</option>
-                            <option value="5Years">5 Years</option>
+                        <label class="form-label">Business List</label>
+                        <select class="form-select" id="BusinessList">
+
                         </select>
                     </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Duration</label>
+                        <select class="form-select" id="duration">
+                            <option value="6">6 Months</option>
+                            <option value="12">1 Year</option>
+                            <option value="24">2 Years</option>
+                            <option value="60">5 Years</option>
+                        </select>
+                    </div>
+
                 }
 
             </div>
@@ -69,7 +68,7 @@
 
 <div class="card mt-4">
     <div class="card-body">
-        <h5 class="card-title fw-semibold mb-4">Active Business</h5>
+        <h5 class="card-title fw-semibold mb-4">Users</h5>
         <div class="table-responsive">
             <table id="userTable" class="table table-bordered text-nowrap align-middle">
                 <thead>
@@ -84,3 +83,91 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+<script>
+    $(document).ready(function () {
+        // 1. Load Business Dropdown via AJAX
+        loadBusinessList();
+
+        // 2. Initialize DataTable
+        var table = $('#userTable').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ajax": {
+                "url": "/Users/GetUsersPaged",
+                "type": "POST"
+            },
+            "columns": [
+                { "data": "username" },
+                { "data": "businessName" },
+                {
+                    "data": "createdAt",
+                    "render": function(data) { return new Date(data).toLocaleDateString(); }
+                },
+                {
+                    "data": "id",
+                    "render": function (data) {
+                        return `<button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${data}')">Delete</button>`;
+                    }
+                }
+            ]
+        });
+
+        // 3. Form Submission
+                $('#tenantForm').submit(function (e) {
+            e.preventDefault();
+
+            // Validation: Ensure Business is selected if visible
+            if ($('#BusinessList').is(':visible') && !$('#BusinessList').val()) {
+                alert("Please select a Business from the list.");
+                return;
+            }
+
+            const userData = {
+                FullName: $('#fullName').val(),
+                Username: $('#userName').val(),
+                PasswordHash: $('#password').val(),
+                Role: $('#role').val(),
+                TenantId: $('#BusinessList').val() || "",
+                DurationMonths: $('#duration').val() ? parseInt($('#duration').val()) : 0
+            };
+
+            $.ajax({
+                url: '/Users/SaveUser',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(userData),
+                success: function (response) {
+                    alert('Success: User and Subscription created!');
+                    table.ajax.reload();
+                    $('#tenantForm')[0].reset();
+                },
+                error: function (xhr) {
+                    // xhr.responseText contains the error message we sent from the controller
+                    let errorMsg = xhr.responseText || "An unknown error occurred.";
+                    alert('Error (' + xhr.status + '): ' + errorMsg);
+                }
+            });
+        });
+    });
+
+    function loadBusinessList() {
+        $.ajax({
+            url: '/Users/GetBusinessList', // MVC Wrapper
+            type: 'GET',
+            success: function (data) {
+                let dropdown = $('#BusinessList');
+                dropdown.empty();
+                dropdown.append('<option value="">-- Select Business --</option>');
+                $.each(data, function (index, item) {
+                    dropdown.append($('<option></option>').val(item.id).html(item.businessName));
+                });
+            }
+        });
+    }
+</script>
+}

@@ -15,11 +15,14 @@ namespace DAL
         {
             _context = context;
         }
-
         public async Task<List<Tenant>> GetAllTenantsAsync()
         {
-            return await _context.Tenants.ToListAsync();
+            // We use AsNoTracking() for performance since this is a read-only list
+            return await _context.Tenants
+                .AsNoTracking()
+                .ToListAsync();
         }
+        
 
         public async Task<bool> SaveTenantAsync(Tenant tenant)
         {
@@ -119,5 +122,7 @@ namespace DAL
 
             return rowsAffected > 0;
         }
+
     }
-}
+
+      }

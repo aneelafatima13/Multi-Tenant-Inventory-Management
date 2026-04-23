@@ -21,38 +21,38 @@ namespace Multi_TenantInventory_SubscriptionManager.Controllers
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginViewModel model)
         {
-            if (model == null) return Json(new { success = false, msg = "Invalid request." });
+            if (model == null || string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password))
+                return Json(new { success = false, msg = "Username and Password are required." });
 
-            
+            // 1. Hardcoded Owner Bypass (Keep as is for system admin)
             if (model.Email == "owner" && model.Password == "admin123")
             {
-                
                 HttpContext.Session.SetString("UserRole", "Owner");
-                HttpContext.Session.SetString("TenantName", "System Global");
-
+                HttpContext.Session.SetString("TenantId", "0"); // System Tenant
+                HttpContext.Session.SetString("Username", "SystemAdmin");
                 return Json(new { success = true, msg = "Welcome, Owner!", redirect = "/Dashboard/Dashboard" });
             }
 
-            
             try
             {
-                //var result = await _apiService.PostAsync<LoginViewModel, ApiResponse>("account/login", model);
+                var response = await _apiService.PostAsync<ApiResponse>("api/Auth/login", model);
 
-                //if (result != null && result.Success)
-                //{
-                //    HttpContext.Session.SetString("UserRole", "TenantAdmin");
-                //    HttpContext.Session.SetString("JWToken", result.Token); // Contains the TenantId
+                if (response != null && !string.IsNullOrEmpty(response.Token))
+                {
+                    // 2. Store Token in Session (or Cookie)
+                    HttpContext.Session.SetString("JWToken", response.Token);
+                    HttpContext.Session.SetString("UserRole", response.Role);
+                    HttpContext.Session.SetString("TenantId", response.TenantId);
 
-                //    return Json(new { success = true, msg = "Login Successful!", redirect = "/Dashboard/Dashboard" });
-                //}
+                    return Json(new { success = true, msg = "Login Successful", redirect = "/Dashboard/Dashboard" });
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return Json(new { success = false, msg = "API Connection Error." });
+                return Json(new { success = false, msg = "Login failed: " + ex.Message });
             }
 
-            return Json(new { success = false, msg = "Invalid Email or Password." });
+            return Json(new { success = false, msg = "Invalid Username or Password." });
         }
-
     }
 }

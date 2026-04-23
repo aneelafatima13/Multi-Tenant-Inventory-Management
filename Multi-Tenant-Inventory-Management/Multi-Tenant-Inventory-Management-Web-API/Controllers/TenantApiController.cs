@@ -51,5 +51,20 @@ namespace Multi_Tenant_Inventory_Management_Web_API.Controllers
             var success = await _tenantBal.ToggleTenantStatusAsync(id);
             return success ? Ok() : BadRequest();
         }
+
+        [HttpGet("list")]
+        public async Task<IActionResult> GetTenantsList()
+        {
+            try
+            {
+                var result = await _tenantBal.GetTenantsForDropdownAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                // Log exception
+                return StatusCode(500, "Internal server error");
+            }
+        }
     }
 }

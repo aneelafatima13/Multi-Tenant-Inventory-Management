@@ -43,5 +43,16 @@ namespace BAL
             return await _tenantDal.UpdateStatusOnlyAsync(id, newStatus);
         }
 
+        public async Task<IEnumerable<object>> GetTenantsForDropdownAsync()
+        {
+            var tenants = await _tenantDal.GetAllTenantsAsync();
+
+            // Perform the projection/mapping here
+            return tenants.Select(t => new
+            {
+                t.Id,
+                t.BusinessName
+            });
+        }
     }
 }

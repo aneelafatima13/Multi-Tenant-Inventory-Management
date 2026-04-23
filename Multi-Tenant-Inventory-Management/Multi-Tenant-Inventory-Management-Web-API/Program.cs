@@ -20,6 +20,8 @@ builder.Services.AddScoped<ITenantService, ApiTenantService>();
 // 3. Register your N-Tier Layers
 builder.Services.AddScoped<TenantDAL>();
 builder.Services.AddScoped<TenantBAL>();
+builder.Services.AddScoped<UsersDAL>();
+builder.Services.AddScoped<UsersBAL>();
 
 // 4. Add Services (Standard)
 builder.Services.AddControllers();

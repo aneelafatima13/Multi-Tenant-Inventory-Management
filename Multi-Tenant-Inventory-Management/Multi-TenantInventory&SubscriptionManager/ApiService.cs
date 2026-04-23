@@ -1,4 +1,5 @@
 ﻿using Common;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace Multi_TenantInventory_SubscriptionManager
@@ -6,12 +7,25 @@ namespace Multi_TenantInventory_SubscriptionManager
     public class ApiService
     {
         private readonly HttpClient _httpClient;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ApiService(HttpClient httpClient)
+
+        public ApiService(HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClient;
             // Best practice: Move this string to appsettings.json
             _httpClient.BaseAddress = new Uri("https://localhost:7286/");
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        private void AddAuthHeader()
+        {
+            var token = _httpContextAccessor.HttpContext?.Session.GetString("JWToken");
+            if (!string.IsNullOrEmpty(token))
+            {
+                _httpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
+            }
         }
 
         // 1. Generic GET Method
@@ -19,6 +33,7 @@ namespace Multi_TenantInventory_SubscriptionManager
         {
             try
             {
+                AddAuthHeader();
                 var response = await _httpClient.GetAsync(endpoint);
                 if (response.IsSuccessStatusCode)
                 {

@@ -2,6 +2,7 @@
 using Common.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Common;
 
 namespace DAL
 {
@@ -17,6 +18,7 @@ namespace DAL
 
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<UserListView> UserListView { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<Subscription> Subscriptions { get; set; }
 
@@ -31,6 +33,10 @@ namespace DAL
                 entity.Property(e => e.Id).HasMaxLength(6).IsUnicode(true);
                 entity.HasIndex(e => e.BusinessName).IsUnique();
             });
+
+            modelBuilder.Entity<UserListView>()
+        .ToView("vw_UserList")
+        .HasNoKey();
 
             // --- User Configuration (BigInt ID) ---
             modelBuilder.Entity<User>(entity =>

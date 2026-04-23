@@ -39,5 +39,22 @@ namespace Common.Entities
         // Navigation Properties
         [ForeignKey("TenantId")]
         public virtual Tenant Tenant { get; set; }
+
+        [NotMapped]
+        public int DurationMonths { get; set; }
+
+        [NotMapped]
+        public string BusinessName { get; set; }
+    }
+
+
+    public class UserListView
+    {
+        public long Id { get; set; }
+        public string Username { get; set; }
+        public string Role { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string BusinessName { get; set; }
+        public string TenantId { get; set; }
     }
 }
