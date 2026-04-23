@@ -30,18 +30,7 @@ namespace Common.Entities
         public ICollection<Subscription> Subscriptions { get; set; }
     }
 
-    // 2. User Entity
-    public class User : ITenantEntity
-    {
-        public long? Id { get; set; }
-        public string TenantId { get; set; }
-        public string Username { get; set; }
-        public string PasswordHash { get; set; }
-        public string Role { get; set; }
-
-        public Tenant Tenant { get; set; }
-    }
-
+    
     // 3. Product Entity
     public class Product : ITenantEntity
     {
@@ -55,15 +44,5 @@ namespace Common.Entities
         public Tenant Tenant { get; set; }
     }
 
-    // 4. Subscription Entity
-    public class Subscription : ITenantEntity
-    {
-        public long? Id { get; set; }
-        public string TenantId { get; set; }
-        public string CustomerName { get; set; }
-        public DateTime ExpiryDate { get; set; }
-        public string Status { get; set; } = "Active";
-
-        public Tenant Tenant { get; set; }
-    }
+   
 }

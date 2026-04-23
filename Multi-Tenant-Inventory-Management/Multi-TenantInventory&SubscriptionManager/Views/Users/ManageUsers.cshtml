@@ -1,5 +1,9 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@{
     ViewData["Title"] = "ManageUsers";
+    var userRole = HttpContextAccessor.HttpContext.Session.GetString("UserRole");
+
 }
 <div class="card">
     <div class="card-body">
@@ -7,6 +11,10 @@
         <form id="tenantForm">
             <input type="hidden" id="userId" />
             <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="fullName" required>
+                </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label">User Name</label>
                     <input type="text" class="form-control" id="userName" required>
@@ -18,9 +26,17 @@
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Role</label>
                     <select class="form-select" id="role">
-                        <option value="Owner">Owner</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Staff">Staff</option>
+                        @if (userRole == "Owner")
+                        {
+                            <option value="Owner">Owner</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Staff">Staff</option>
+                        }
+                        else if (userRole == "Admin")
+                        {
+                            <option value="Admin">Admin</option>
+                            <option value="Staff">Staff</option>
+                        }
                     </select>
                 </div>
                 <div class="col-md-6 mb-3">
@@ -29,6 +45,21 @@
                         
                     </select>
                 </div>
+                @if (userRole == "Owner")
+                {
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Duration</label>
+                        <select class="form-select" id="role">
+                            <option value="6Months">6 months</option>
+                            <option value="1Year">1 Year</option>
+                            <option value="2Years">2 Years</option>
+                            <option value="3Years">3 Years</option>
+                            <option value="4Years">4 Years</option>
+                            <option value="5Years">5 Years</option>
+                        </select>
+                    </div>
+                }
+
             </div>
             <button type="submit" class="btn btn-primary" id="save">Save User</button>
             <button type="button" class="btn btn-light" onclick="resetForm()">Reset</button>

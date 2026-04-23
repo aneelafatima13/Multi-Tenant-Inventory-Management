@@ -1,36 +1,20 @@
 ﻿using Common.Interfaces;
 using Common.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Reflection.Emit;
 
 namespace DAL
 {
     public class ApplicationDbContext : DbContext
     {
-        // 1. Update the private field
-        private readonly string _currentTenantId; // Changed from Guid
+        private readonly string _currentTenantId;
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantService tenantService)
             : base(options)
         {
-            // 2. Get the string ID
             _currentTenantId = tenantService.GetTenantId();
         }
 
-        // 3. Update the filter helper
-        private LambdaExpression ConvertFilterExpression(Type type)
-        {
-            var parameter = Expression.Parameter(type, "e");
-            var property = Expression.Property(parameter, "TenantId");
-
-            // Ensure the constant is a string
-            var tenantIdConstant = Expression.Constant(_currentTenantId, typeof(string));
-            var body = Expression.Equal(property, tenantIdConstant);
-
-            return Expression.Lambda(body, parameter);
-        }
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Product> Products { get; set; }
@@ -39,18 +23,54 @@ namespace DAL
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.Entity<Tenant>()
-   .Property(t => t.Id)
-   .HasMaxLength(6)
-   .IsUnicode(true);
 
-            // Define the relationship for Tenant -> Many Entities
-            modelBuilder.Entity<Tenant>().HasMany(t => t.Products).WithOne(p => p.Tenant).HasForeignKey(p => p.TenantId);
-            modelBuilder.Entity<Tenant>().HasMany(t => t.Users).WithOne(u => u.Tenant).HasForeignKey(u => u.TenantId);
-            modelBuilder.Entity<Tenant>().HasMany(t => t.Subscriptions).WithOne(s => s.Tenant).HasForeignKey(s => s.TenantId);
-           
+            // --- Tenant Configuration ---
+            modelBuilder.Entity<Tenant>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(6).IsUnicode(true);
+                entity.HasIndex(e => e.BusinessName).IsUnique();
+            });
+
+            // --- User Configuration (BigInt ID) ---
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd(); // Identity(1,1)
+                entity.Property(u => u.TenantId).HasMaxLength(6).IsRequired();
+
+                // Relationship: One Tenant -> Many Users
+                entity.HasOne(u => u.Tenant)
+                      .WithMany(t => t.Users)
+                      .HasForeignKey(u => u.TenantId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // --- Subscription Configuration (BigInt ID) ---
+            modelBuilder.Entity<Subscription>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(s => s.TenantId).HasMaxLength(6).IsRequired();
+
+                // Fix for the SQL Default value conflict (Mapping Int to SQL Default)
+                entity.Property(s => s.Status).HasDefaultValue(1);
+
+                // Relationships
+                entity.HasOne(s => s.Tenant)
+                      .WithMany(t => t.Subscriptions)
+                      .HasForeignKey(s => s.TenantId);
+
+                entity.HasOne(s => s.User)
+                      .WithMany() // Or u.Subscriptions if added to User entity
+                      .HasForeignKey(s => s.UserId)
+                      .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            // --- Global Multi-Tenant Query Filter ---
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
+                // Ensure the entity has a TenantId property before applying filter
                 if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
                 {
                     modelBuilder.Entity(entityType.ClrType)
@@ -58,14 +78,21 @@ namespace DAL
                 }
             }
         }
-       
+
+        private LambdaExpression ConvertFilterExpression(Type type)
+        {
+            var parameter = Expression.Parameter(type, "e");
+            var property = Expression.Property(parameter, "TenantId");
+            var tenantIdConstant = Expression.Constant(_currentTenantId, typeof(string));
+            var body = Expression.Equal(property, tenantIdConstant);
+
+            return Expression.Lambda(body, parameter);
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                // This is a safety fallback. 
-                // In a real N-Tier app, Program.cs should handle this, 
-                // but this stops the "Not Initialized" error immediately.
                 optionsBuilder.UseSqlServer("Name=ConnectionStrings:Multi-Tenant-Inventory-Management-Db");
             }
         }
