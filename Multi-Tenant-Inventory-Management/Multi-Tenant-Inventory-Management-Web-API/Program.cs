@@ -3,6 +3,9 @@ using DAL;
 using Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Multi_Tenant_Inventory_Management_Web_API;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,24 @@ builder.Services.AddScoped<TenantDAL>();
 builder.Services.AddScoped<TenantBAL>();
 builder.Services.AddScoped<UsersDAL>();
 builder.Services.AddScoped<UsersBAL>();
+builder.Services.AddScoped<ProductsBAL>();
+builder.Services.AddScoped<ProductsDAL>();
+// In your Web API Program.cs
+builder.Services.AddAuthentication(options => {
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options => {
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"])),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+});
+
+// ... later in the file
 
 // 4. Add Services (Standard)
 builder.Services.AddControllers();
@@ -51,6 +72,7 @@ app.UseHttpsRedirection();
 // 6. Use CORS Policy
 app.UseCors("AllowMVCApp");
 
+app.UseAuthentication(); // Must be before UseAuthorization
 app.UseAuthorization();
 
 app.MapControllers();

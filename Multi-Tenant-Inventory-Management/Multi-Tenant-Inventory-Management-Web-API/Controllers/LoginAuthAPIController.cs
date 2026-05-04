@@ -58,6 +58,7 @@ namespace Multi_Tenant_Inventory_Management_Web_API.Controllers
             {
                 Token = tokenHandler.WriteToken(token),
                 Role = authUser.Role,
+                UserId = authUser.Id.ToString(),
                 TenantId = authUser.TenantId
             });
         }

@@ -35,13 +35,17 @@ namespace Common.Entities
     public class Product : ITenantEntity
     {
         public long? Id { get; set; }
-        public string TenantId { get; set; }
-        public string Name { get; set; }
-        public string SKU { get; set; }
+        public string? TenantId { get; set; }
+        public string? Name { get; set; }
+        public string? SKU { get; set; }
         public int StockLevel { get; set; }
         public int LowStockThreshold { get; set; }
 
-        public Tenant Tenant { get; set; }
+        public DateTime? CreatedDate { get; set; }
+        public DateTime? ModifiedDate { get; set; }
+        public decimal? Price { get; set; }
+        public long? CreatedbyId { get; set; }
+        public long? ModifiedbyId { get; set; }
     }
 
    

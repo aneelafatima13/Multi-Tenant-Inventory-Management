@@ -74,7 +74,7 @@
                         }
 
                         @* --- TENANT ADMIN SECTION --- *@
-                        @if (userRole == "TenantAdmin")
+                        @if (userRole == "Admin")
                         {
                             <li class="nav-small-cap">
                                 <i class="ti ti-dots nav-small-cap-icon fs-5"></i>
@@ -88,29 +88,22 @@
                                     <span class="hide-menu ms-2 ps-1">Manage Staff</span>
                                 </a>
                             </li>
-                            <li class="sidebar-item">
-                                <a class="sidebar-link sidebar-link primary-hover-bg" href="/Inventory/Manage">
-                                    <span class="aside-icon p-2 bg-light-primary rounded-3">
-                                        <i class="ti ti-package fs-7 text-primary"></i>
-                                    </span>
-                                    <span class="hide-menu ms-2 ps-1">Inventory Management</span>
-                                </a>
-                            </li>
+                            
                         }
 
                         @* --- SHARED STAFF & ADMIN SECTION --- *@
-                        @if (userRole == "TenantAdmin" || userRole == "TenantStaff")
+                        @if (userRole == "Admin" || userRole == "Staff")
                         {
                             <li class="nav-small-cap">
                                 <i class="ti ti-dots nav-small-cap-icon fs-5"></i>
                                 <span class="hide-menu">Inventory Operations</span>
                             </li>
                             <li class="sidebar-item">
-                                <a class="sidebar-link sidebar-link success-hover-bg" href="/Products/List">
+                                <a class="sidebar-link sidebar-link success-hover-bg" href="/Products/ManageProducts">
                                     <span class="aside-icon p-2 bg-light-success rounded-3">
                                         <i class="ti ti-list-check fs-7 text-success"></i>
                                     </span>
-                                    <span class="hide-menu ms-2 ps-1">View Products</span>
+                                    <span class="hide-menu ms-2 ps-1">Inventory Management</span>
                                 </a>
                             </li>
                         }

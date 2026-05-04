@@ -1,0 +1,169 @@
+﻿@{
+    ViewData["Title"] = "Manage Products";
+}
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title fw-semibold mb-4">Product Information</h5>
+        <form id="productForm">
+            <input type="hidden" id="productId" value="0" />
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" class="form-control" id="name" required placeholder="e.g. Wireless Mouse">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">SKU</label>
+                    <input type="text" class="form-control" id="sku" required placeholder="e.g. WM-001">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Price</label>
+                    <input type="number" step="0.01" class="form-control" id="price" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Stock Level</label>
+                    <input type="number" class="form-control" id="stockLevel" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Low Stock Threshold</label>
+                    <input type="number" class="form-control" id="lowStockThreshold" required>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary" id="saveProduct">Save Product</button>
+            <button type="button" class="btn btn-light" onclick="resetProductForm()">Reset</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title fw-semibold mb-4">Inventory List</h5>
+        <div class="table-responsive">
+            <table id="productTable" class="table table-bordered text-nowrap align-middle w-100">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>SKU</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        var table;
+
+        $(document).ready(function () {
+            // 1. Initialize DataTable
+            table = $('#productTable').DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    "url": "/Products/GetProducts",
+                    "type": "POST",
+                    "datatype": "json"
+                },
+                "columns": [
+                    { "data": "name" },
+                    { "data": "sku" },
+                    {
+                        "data": "price",
+                        "render": function(data) { return "$" + parseFloat(data).toFixed(2); }
+                    },
+                    { "data": "stockLevel" },
+                    {
+                        "data": null,
+                        "render": function (data, type, row) {
+                            if (row.stockLevel <= row.lowStockThreshold) {
+                                return `<span class="badge bg-light-danger text-danger">Low Stock</span>`;
+                            }
+                            return `<span class="badge bg-light-success text-success">Healthy</span>`;
+                        }
+                    },
+                    {
+                        "data": "id",
+                        "render": function (data, type, row) {
+                            return `
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editProduct(${JSON.stringify(row).replace(/"/g, '&quot;')})">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${data}')">Delete</button>
+                                </div>`;
+                        }
+                    }
+                ]
+            });
+
+            // 2. Save Product
+            $('#saveProduct').click(function () {
+                var model = {
+                    Id: parseInt($('#productId').val()),
+                    Name: $('#name').val(),
+                    SKU: $('#sku').val(),
+                    Price: parseFloat($('#price').val()),
+                    StockLevel: parseInt($('#stockLevel').val()),
+                    LowStockThreshold: parseInt($('#lowStockThreshold').val())
+                };
+
+                if (!model.Name || !model.SKU) {
+                    alert("Name and SKU are required.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '/Products/SaveProduct',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(model),
+                    success: function () {
+                        alert('Product saved successfully');
+                        resetProductForm();
+                        table.ajax.reload();
+                    },
+                    error: function (xhr) {
+                        alert("Error: " + xhr.responseText);
+                    }
+                });
+            });
+        });
+
+        function editProduct(row) {
+            $('#productId').val(row.id);
+            $('#name').val(row.name);
+            $('#sku').val(row.sku);
+            $('#price').val(row.price);
+            $('#stockLevel').val(row.stockLevel);
+            $('#lowStockThreshold').val(row.lowStockThreshold);
+            window.scrollTo(0, 0);
+        }
+
+        function resetProductForm() {
+            $('#productId').val('0');
+            $('#productForm')[0].reset();
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Are you sure you want to delete this product?")) {
+                $.ajax({
+                    url: `/Products/DeleteProduct?id=${id}`,
+                    type: 'DELETE',
+                    success: function () {
+                        alert('Product deleted');
+                        table.ajax.reload(null, false);
+                    }
+                });
+            }
+        }
+    </script>
+}

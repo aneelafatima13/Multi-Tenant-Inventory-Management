@@ -8,12 +8,13 @@ namespace DAL
 {
     public class ApplicationDbContext : DbContext
     {
-        private readonly string _currentTenantId;
+        // Change: Store the service to access TenantId dynamically
+        private readonly ITenantService _tenantService;
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantService tenantService)
             : base(options)
         {
-            _currentTenantId = tenantService.GetTenantId();
+            _tenantService = tenantService;
         }
 
         public DbSet<Tenant> Tenants { get; set; }
@@ -35,64 +36,69 @@ namespace DAL
             });
 
             modelBuilder.Entity<UserListView>()
-        .ToView("vw_UserList")
-        .HasNoKey();
+                .ToView("vw_UserList")
+                .HasNoKey();
 
-            // --- User Configuration (BigInt ID) ---
+            // --- User Configuration ---
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Id).ValueGeneratedOnAdd(); // Identity(1,1)
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
                 entity.Property(u => u.TenantId).HasMaxLength(6).IsRequired();
 
-                // Relationship: One Tenant -> Many Users
+                // Explicitly map the relationship to prevent "TenantId1"
                 entity.HasOne(u => u.Tenant)
                       .WithMany(t => t.Users)
                       .HasForeignKey(u => u.TenantId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // --- Subscription Configuration (BigInt ID) ---
+            // --- Product Configuration ---
+            modelBuilder.Entity<Product>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(p => p.TenantId).HasMaxLength(6).IsRequired();
+
+            });
+
+            // --- Subscription Configuration ---
             modelBuilder.Entity<Subscription>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
                 entity.Property(s => s.TenantId).HasMaxLength(6).IsRequired();
-
-                // Fix for the SQL Default value conflict (Mapping Int to SQL Default)
                 entity.Property(s => s.Status).HasDefaultValue(1);
 
-                // Relationships
                 entity.HasOne(s => s.Tenant)
                       .WithMany(t => t.Subscriptions)
                       .HasForeignKey(s => s.TenantId);
 
                 entity.HasOne(s => s.User)
-                      .WithMany() // Or u.Subscriptions if added to User entity
+                      .WithMany()
                       .HasForeignKey(s => s.UserId)
                       .OnDelete(DeleteBehavior.NoAction);
             });
 
-            // --- Global Multi-Tenant Query Filter ---
+            // --- Global Multi-Tenant Query Filter (Dynamic Fix) ---
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
-                // Ensure the entity has a TenantId property before applying filter
                 if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
                 {
-                    modelBuilder.Entity(entityType.ClrType)
-                        .HasQueryFilter(ConvertFilterExpression(entityType.ClrType));
+                    // Use the dynamic filter helper
+                    var method = typeof(ApplicationDbContext)
+                        .GetMethod(nameof(ApplyTenantFilter), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                        ?.MakeGenericMethod(entityType.ClrType);
+
+                    method?.Invoke(this, new object[] { modelBuilder });
                 }
             }
         }
 
-        private LambdaExpression ConvertFilterExpression(Type type)
+        // This ensures the filter is evaluated every request, not just once at startup
+        private void ApplyTenantFilter<TEntity>(ModelBuilder modelBuilder) where TEntity : class, ITenantEntity
         {
-            var parameter = Expression.Parameter(type, "e");
-            var property = Expression.Property(parameter, "TenantId");
-            var tenantIdConstant = Expression.Constant(_currentTenantId, typeof(string));
-            var body = Expression.Equal(property, tenantIdConstant);
-
-            return Expression.Lambda(body, parameter);
+            modelBuilder.Entity<TEntity>().HasQueryFilter(e => e.TenantId == _tenantService.GetTenantId());
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

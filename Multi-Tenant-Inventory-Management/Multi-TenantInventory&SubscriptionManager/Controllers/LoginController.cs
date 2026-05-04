@@ -28,14 +28,15 @@ namespace Multi_TenantInventory_SubscriptionManager.Controllers
             if (model.Email == "owner" && model.Password == "admin123")
             {
                 HttpContext.Session.SetString("UserRole", "Owner");
-                HttpContext.Session.SetString("TenantId", "0"); // System Tenant
+                HttpContext.Session.SetString("TenantId", "0");
+                HttpContext.Session.SetString("UserId", "0"); // System Tenant
                 HttpContext.Session.SetString("Username", "SystemAdmin");
                 return Json(new { success = true, msg = "Welcome, Owner!", redirect = "/Dashboard/Dashboard" });
             }
 
             try
             {
-                var response = await _apiService.PostAsync<ApiResponse>("api/Auth/login", model);
+                var response = await _apiService.PostWithResultAsync<LoginViewModel, ApiResponse>("api/Auth/login", model);
 
                 if (response != null && !string.IsNullOrEmpty(response.Token))
                 {
@@ -43,6 +44,7 @@ namespace Multi_TenantInventory_SubscriptionManager.Controllers
                     HttpContext.Session.SetString("JWToken", response.Token);
                     HttpContext.Session.SetString("UserRole", response.Role);
                     HttpContext.Session.SetString("TenantId", response.TenantId);
+                    HttpContext.Session.SetString("UserId", response.UserId);
 
                     return Json(new { success = true, msg = "Login Successful", redirect = "/Dashboard/Dashboard" });
                 }

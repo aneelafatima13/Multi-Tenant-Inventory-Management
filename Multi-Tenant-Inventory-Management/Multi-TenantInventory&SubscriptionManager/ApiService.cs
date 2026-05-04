@@ -51,12 +51,14 @@ namespace Multi_TenantInventory_SubscriptionManager
         // 2. Simplified POST Method (Returns response status for the Controller)
         public async Task<HttpResponseMessage> PostAsync<TRequest>(string endpoint, TRequest data)
         {
+            AddAuthHeader();
             return await _httpClient.PostAsJsonAsync(endpoint, data);
         }
 
         // 3. Generic POST Method (For when you need the object back, e.g., Login/Register)
         public async Task<TResponse?> PostWithResultAsync<TRequest, TResponse>(string endpoint, TRequest data)
         {
+            AddAuthHeader();
             var response = await _httpClient.PostAsJsonAsync(endpoint, data);
 
             if (response.IsSuccessStatusCode)
@@ -64,11 +66,13 @@ namespace Multi_TenantInventory_SubscriptionManager
                 return await response.Content.ReadFromJsonAsync<TResponse>();
             }
 
+            var errorJson = await response.Content.ReadAsStringAsync();
             return default;
         }
 
         public async Task<PagedResponse<T>?> GetPagedAsync<T>(string endpoint, int skip, int take, string search)
         {
+            AddAuthHeader();
             // Constructs: api/TenantApi/paged?skip=0&take=10&search=abc
             var url = $"{endpoint}?skip={skip}&take={take}&search={Uri.EscapeDataString(search ?? "")}";
 
